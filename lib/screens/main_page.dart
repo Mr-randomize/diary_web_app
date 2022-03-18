@@ -1,3 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:diary_web_app/model/user.dart';
+import 'package:diary_web_app/widgets/create_profile.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 
@@ -61,40 +65,25 @@ class _MainPageState extends State<MainPage> {
                     }),
               ),
               //Todo: Create profile
-              Container(
-                child: Row(
-                  children: [
-                    Column(
-                      children: const [
-                        Expanded(
-                            child: InkWell(
-                          child: Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: CircleAvatar(
-                              radius: 30,
-                              backgroundImage:
-                                  NetworkImage('https://picsum.photos/200/300'),
-                              backgroundColor: Colors.transparent,
-                            ),
-                          ),
-                        )),
-                        Text(
-                          'James',
-                          style: TextStyle(color: Colors.grey),
-                        )
-                      ],
-                    ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(
-                        Icons.logout_outlined,
-                        size: 19,
-                        color: Colors.red,
-                      ),
-                    )
-                  ],
-                ),
-              )
+              StreamBuilder<QuerySnapshot>(
+                stream:
+                    FirebaseFirestore.instance.collection('users').snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const CircularProgressIndicator();
+                  }
+                  final usersListStream = snapshot.data!.docs.map((docs) {
+                    return MUser.fromDocument(docs);
+                  }).where((muser) {
+                    return (muser.uid ==
+                        FirebaseAuth.instance.currentUser!.uid);
+                  }).toList();
+
+                  MUser currentUser = usersListStream[0];
+
+                  return CreateProfile(currentUser: currentUser);
+                },
+              ),
             ],
           )
         ],
@@ -188,3 +177,5 @@ class _MainPageState extends State<MainPage> {
     );
   }
 }
+
+
